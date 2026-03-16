@@ -1,0 +1,647 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8">
+  <title>Cii 行動盤點系統-企業版</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
+  <style>
+    body {
+      font-family: "Microsoft JhengHei", Arial, sans-serif;
+      margin: 0;
+      padding: 16px;
+      background: #f5f7fb;
+      color: #222;
+    }
+
+    .container {
+      max-width: 860px;
+      margin: 0 auto;
+    }
+
+    .title {
+      font-size: 28px;
+      font-weight: 700;
+      color: #1565c0;
+      margin-bottom: 16px;
+    }
+
+    .card {
+      background: #fff;
+      border-radius: 12px;
+      padding: 16px;
+      margin-bottom: 16px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+    }
+
+    .card h3 {
+      margin-top: 0;
+      color: #0d47a1;
+      font-size: 20px;
+    }
+
+    .row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+    }
+
+    .row-1 {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 12px;
+    }
+
+    label {
+      display: block;
+      margin-bottom: 6px;
+      font-weight: 600;
+    }
+
+    input, textarea, select {
+      width: 100%;
+      box-sizing: border-box;
+      padding: 10px 12px;
+      border: 1px solid #cfd8dc;
+      border-radius: 8px;
+      font-size: 16px;
+      background: #fff;
+    }
+
+    input[readonly] {
+      background: #f3f6f9;
+    }
+
+    textarea {
+      min-height: 88px;
+      resize: vertical;
+    }
+
+    .btn-group {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-top: 8px;
+    }
+
+    button {
+      border: none;
+      border-radius: 8px;
+      padding: 10px 18px;
+      font-size: 16px;
+      cursor: pointer;
+      color: #fff;
+      background: #1976d2;
+    }
+
+    button:hover {
+      opacity: 0.92;
+    }
+
+    .btn-secondary {
+      background: #546e7a;
+    }
+
+    .btn-success {
+      background: #2e7d32;
+    }
+
+    .btn-danger {
+      background: #c62828;
+    }
+
+    .msg {
+      margin-top: 12px;
+      padding: 10px 12px;
+      border-radius: 8px;
+      font-size: 15px;
+    }
+
+    .msg-info {
+      background: #e3f2fd;
+      color: #0d47a1;
+    }
+
+    .msg-success {
+      background: #e8f5e9;
+      color: #1b5e20;
+    }
+
+    .msg-error {
+      background: #ffebee;
+      color: #b71c1c;
+    }
+
+    .msg-warn {
+      background: #fff8e1;
+      color: #e65100;
+    }
+
+    .diff-ok {
+      color: #1b5e20;
+      font-weight: 700;
+    }
+
+    .diff-bad {
+      color: #c62828;
+      font-weight: 700;
+    }
+
+    #reader {
+      width: 100%;
+      max-width: 420px;
+      margin: 8px auto 0;
+    }
+
+    .small {
+      font-size: 13px;
+      color: #607d8b;
+    }
+
+    pre {
+      white-space: pre-wrap;
+      word-break: break-word;
+      background: #f7f7f7;
+      border-radius: 8px;
+      padding: 12px;
+      font-size: 12px;
+      overflow-x: auto;
+    }
+
+    .pill {
+      display: inline-block;
+      padding: 4px 8px;
+      border-radius: 999px;
+      background: #e3f2fd;
+      color: #1565c0;
+      font-size: 12px;
+      margin-right: 6px;
+      margin-bottom: 6px;
+    }
+
+    @media (max-width: 720px) {
+      .row {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="title">Cii 行動盤點系統 - 完整企業版</div>
+
+    <div class="card">
+      <h3>1. 系統連線資訊</h3>
+      <div class="row-1">
+        <div>
+          <label for="gasUrl">GAS Web App 網址</label>
+          <input id="gasUrl" type="text"
+            value="https://script.google.com/macros/s/AKfycbzPyZ8hcNvkBx40F3YGQNQ0ai60qxDW_5mPww441_J8XZ6Qcz3K-vij-rWU0iNO5eT7Cw/exec">
+        </div>
+      </div>
+      <div class="btn-group">
+        <button onclick="healthCheck()">健康檢查</button>
+        <button class="btn-secondary" onclick="loadSystemParameters()">讀取系統參數</button>
+      </div>
+      <div id="systemMsg"></div>
+      <div id="paramArea" class="small"></div>
+    </div>
+
+    <div class="card">
+      <h3>2. 查詢品項 / 掃描 QR Code</h3>
+      <div class="row">
+        <div>
+          <label for="itemCode">品項代碼</label>
+          <input id="itemCode" type="text" placeholder="請輸入品項代碼，例如 IT002">
+        </div>
+        <div>
+          <label for="qrRawText">QR 原始文字</label>
+          <input id="qrRawText" type="text" placeholder="掃描後會自動帶入">
+        </div>
+      </div>
+
+      <div class="btn-group">
+        <button onclick="getItem()">查詢品項</button>
+        <button class="btn-secondary" onclick="startScanner()">啟動掃描</button>
+        <button class="btn-danger" onclick="stopScanner()">停止掃描</button>
+        <button class="btn-secondary" onclick="clearForm()">清空畫面</button>
+      </div>
+
+      <div class="small" style="margin-top:10px;">
+        ⚠️注意：若相機無法啟動，請改用 Chrome/Edge，並允許相機權限。若用本機 HTML 開啟，部分瀏覽器可能限制相機，建議改用 localhost 或部署到網頁主機。
+      </div>
+
+      <div id="reader"></div>
+      <div id="queryMsg"></div>
+    </div>
+
+    <div class="card">
+      <h3>3. 品項資訊</h3>
+      <div class="row">
+        <div>
+          <label for="itemName">品項名稱</label>
+          <input id="itemName" type="text" readonly>
+        </div>
+        <div>
+          <label for="category">類別</label>
+          <input id="category" type="text" readonly>
+        </div>
+      </div>
+
+      <div class="row">
+        <div>
+          <label for="location">存放位置</label>
+          <input id="location" type="text" readonly>
+        </div>
+        <div>
+          <label for="unit">單位</label>
+          <input id="unit" type="text" readonly>
+        </div>
+      </div>
+
+      <div class="row">
+        <div>
+          <label for="expectedQty">帳面數量</label>
+          <input id="expectedQty" type="number" readonly>
+        </div>
+        <div>
+          <label for="status">狀態</label>
+          <input id="status" type="text" readonly>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h3>4. 盤點輸入</h3>
+      <div class="row">
+        <div>
+          <label for="userCode">使用者代碼</label>
+          <input id="userCode" type="text" value="U001">
+        </div>
+        <div>
+          <label for="userName">盤點人員</label>
+          <input id="userName" type="text" value="MobileUser">
+        </div>
+      </div>
+
+      <div class="row">
+        <div>
+          <label for="actualQty">實際數量</label>
+          <input id="actualQty" type="number" oninput="calculateDiff()">
+        </div>
+        <div>
+          <label for="diffQty">差異數量</label>
+          <input id="diffQty" type="text" readonly>
+        </div>
+      </div>
+
+      <div class="row-1">
+        <div>
+          <label for="note">備註</label>
+          <textarea id="note" placeholder="若有差異，建議填寫原因"></textarea>
+        </div>
+      </div>
+
+      <div class="btn-group">
+        <button class="btn-success" onclick="saveCount()">送出盤點</button>
+      </div>
+
+      <div id="saveMsg"></div>
+    </div>
+
+    <div class="card">
+      <h3>5. API 除錯資訊</h3>
+      <pre id="debugArea"></pre>
+    </div>
+  </div>
+
+  <script>
+    let currentItem = null;
+    let systemParams = {};
+    let html5QrCode = null;
+    let scannerRunning = false;
+
+    function getGasUrl() {
+      return document.getElementById("gasUrl").value.trim();
+    }
+
+    function setMessage(targetId, type, text) {
+      const el = document.getElementById(targetId);
+      el.className = `msg msg-${type}`;
+      el.innerText = text;
+    }
+
+    function setDebug(data) {
+      document.getElementById("debugArea").innerText =
+        typeof data === "string" ? data : JSON.stringify(data, null, 2);
+    }
+
+    function clearReadonlyFields() {
+      document.getElementById("itemName").value = "";
+      document.getElementById("category").value = "";
+      document.getElementById("location").value = "";
+      document.getElementById("unit").value = "";
+      document.getElementById("expectedQty").value = "";
+      document.getElementById("status").value = "";
+      document.getElementById("actualQty").value = "";
+      document.getElementById("diffQty").value = "";
+      document.getElementById("note").value = "";
+    }
+
+    function clearForm() {
+      document.getElementById("itemCode").value = "";
+      document.getElementById("qrRawText").value = "";
+      clearReadonlyFields();
+      currentItem = null;
+      setMessage("queryMsg", "info", "畫面已清空");
+      setMessage("saveMsg", "info", "請重新查詢品項");
+      setDebug("");
+    }
+
+    async function healthCheck() {
+      const gasUrl = getGasUrl();
+      if (!gasUrl) {
+        setMessage("systemMsg", "error", "請先輸入 GAS Web App 網址");
+        return;
+      }
+
+      try {
+        setMessage("systemMsg", "info", "健康檢查中...");
+        const res = await fetch(`${gasUrl}?action=healthCheck`);
+        const data = await res.json();
+        setDebug(data);
+
+        if (data.status === "success") {
+          setMessage("systemMsg", "success", `健康檢查成功：${data.message}`);
+        } else {
+          setMessage("systemMsg", "error", data.message || "健康檢查失敗");
+        }
+      } catch (error) {
+        setMessage("systemMsg", "error", "健康檢查失敗：" + error.message);
+        setDebug(error.stack || error.message);
+      }
+    }
+
+    async function loadSystemParameters() {
+      const gasUrl = getGasUrl();
+      if (!gasUrl) {
+        setMessage("systemMsg", "error", "請先輸入 GAS Web App 網址");
+        return;
+      }
+
+      try {
+        setMessage("systemMsg", "info", "讀取系統參數中...");
+        const res = await fetch(`${gasUrl}?action=getSystemParameters`);
+        const data = await res.json();
+        setDebug(data);
+
+        if (data.status === "success") {
+          systemParams = data.data || {};
+          setMessage("systemMsg", "success", "系統參數讀取成功");
+
+          const paramArea = document.getElementById("paramArea");
+          paramArea.innerHTML = "";
+
+          Object.keys(systemParams).forEach(key => {
+            const span = document.createElement("span");
+            span.className = "pill";
+            span.innerText = `${key}: ${systemParams[key]}`;
+            paramArea.appendChild(span);
+          });
+
+          if (systemParams.DefaultUserName && !document.getElementById("userName").value.trim()) {
+            document.getElementById("userName").value = systemParams.DefaultUserName;
+          }
+        } else {
+          setMessage("systemMsg", "error", data.message || "讀取系統參數失敗");
+        }
+      } catch (error) {
+        setMessage("systemMsg", "error", "讀取系統參數失敗：" + error.message);
+        setDebug(error.stack || error.message);
+      }
+    }
+
+    async function getItem() {
+      const gasUrl = getGasUrl();
+      const itemCode = document.getElementById("itemCode").value.trim();
+
+      if (!gasUrl) {
+        setMessage("queryMsg", "error", "請先輸入 GAS Web App 網址");
+        return;
+      }
+
+      if (!itemCode) {
+        setMessage("queryMsg", "error", "請先輸入品項代碼");
+        return;
+      }
+
+      try {
+        setMessage("queryMsg", "info", "查詢中...");
+        const res = await fetch(`${gasUrl}?action=getItem&itemCode=${encodeURIComponent(itemCode)}`);
+        const data = await res.json();
+        setDebug(data);
+
+        if (data.status === "success") {
+          const item = data.data || {};
+          currentItem = item;
+
+          document.getElementById("itemName").value = item["品項名稱"] || "";
+          document.getElementById("category").value = item["類別"] || "";
+          document.getElementById("location").value = item["存放位置"] || "";
+          document.getElementById("unit").value = item["單位"] || "";
+          document.getElementById("expectedQty").value = item["帳面數量"] || "";
+          document.getElementById("status").value = item["狀態"] || "";
+          document.getElementById("actualQty").value = "";
+          document.getElementById("diffQty").value = "";
+
+          setMessage("queryMsg", "success", "品項查詢成功");
+          setMessage("saveMsg", "info", "請輸入實際數量後送出");
+        } else {
+          currentItem = null;
+          clearReadonlyFields();
+          setMessage("queryMsg", "error", data.message || "找不到品項");
+        }
+      } catch (error) {
+        setMessage("queryMsg", "error", "查詢失敗：" + error.message);
+        setDebug(error.stack || error.message);
+      }
+    }
+
+    function calculateDiff() {
+      const expectedQty = Number(document.getElementById("expectedQty").value || 0);
+      const actualQtyRaw = document.getElementById("actualQty").value;
+
+      if (actualQtyRaw === "") {
+        document.getElementById("diffQty").value = "";
+        return;
+      }
+
+      const actualQty = Number(actualQtyRaw);
+      if (isNaN(actualQty)) {
+        document.getElementById("diffQty").value = "輸入錯誤";
+        return;
+      }
+
+      const diff = actualQty - expectedQty;
+      document.getElementById("diffQty").value = diff;
+
+      if (diff === 0) {
+        setMessage("saveMsg", "success", "帳面數量與實際數量一致");
+      } else {
+        setMessage("saveMsg", "warn", `發現差異：${diff}，建議填寫備註`);
+      }
+    }
+
+    async function saveCount() {
+      const gasUrl = getGasUrl();
+
+      if (!gasUrl) {
+        setMessage("saveMsg", "error", "請先輸入 GAS Web App 網址");
+        return;
+      }
+
+      if (!currentItem) {
+        setMessage("saveMsg", "error", "請先查詢品項");
+        return;
+      }
+
+      const userCode = document.getElementById("userCode").value.trim() || "GUEST";
+      const userName = document.getElementById("userName").value.trim() || "Guest";
+      const actualQty = document.getElementById("actualQty").value.trim();
+      const note = document.getElementById("note").value.trim();
+      const qrRawText = document.getElementById("qrRawText").value.trim() || currentItem["品項代碼"];
+
+      if (actualQty === "") {
+        setMessage("saveMsg", "error", "請輸入實際數量");
+        return;
+      }
+
+      const expectedQty = Number(currentItem["帳面數量"] || 0);
+      const diffQty = Number(actualQty) - expectedQty;
+
+      if (systemParams.RequireNoteWhenDiff === true && diffQty !== 0 && !note) {
+        setMessage("saveMsg", "error", "系統規則要求：有差異時必須填寫備註");
+        return;
+      }
+
+      try {
+        setMessage("saveMsg", "info", "送出盤點資料中...");
+
+        const url =
+          `${gasUrl}?action=saveCount` +
+          `&itemCode=${encodeURIComponent(currentItem["品項代碼"])}` +
+          `&actualQty=${encodeURIComponent(actualQty)}` +
+          `&userCode=${encodeURIComponent(userCode)}` +
+          `&userName=${encodeURIComponent(userName)}` +
+          `&note=${encodeURIComponent(note)}` +
+          `&qrRawText=${encodeURIComponent(qrRawText)}`;
+
+        const res = await fetch(url);
+        const data = await res.json();
+        setDebug(data);
+
+        if (data.status === "success") {
+          setMessage("saveMsg", "success", `盤點成功，流水號：${data.data.recordId}`);
+          document.getElementById("actualQty").value = "";
+          document.getElementById("diffQty").value = "";
+          document.getElementById("note").value = "";
+        } else {
+          setMessage("saveMsg", "error", data.message || "盤點失敗");
+        }
+      } catch (error) {
+        setMessage("saveMsg", "error", "盤點失敗：" + error.message);
+        setDebug(error.stack || error.message);
+      }
+    }
+
+    async function startScanner() {
+      if (scannerRunning) {
+        setMessage("queryMsg", "warn", "掃描器已啟動");
+        return;
+      }
+
+      try {
+        html5QrCode = new Html5Qrcode("reader");
+        const cameras = await Html5Qrcode.getCameras();
+
+        if (!cameras || cameras.length === 0) {
+          setMessage("queryMsg", "error", "找不到可用相機");
+          return;
+        }
+
+        const cameraId = cameras[0].id;
+
+        await html5QrCode.start(
+          cameraId,
+          {
+            fps: 10,
+            qrbox: 220
+          },
+          (decodedText) => {
+            document.getElementById("qrRawText").value = decodedText;
+
+            const cleanCode = parseQrToItemCode(decodedText);
+            document.getElementById("itemCode").value = cleanCode;
+
+            setMessage("queryMsg", "success", "掃描成功，已帶入品項代碼");
+            stopScanner();
+            getItem();
+          },
+          () => {}
+        );
+
+        scannerRunning = true;
+        setMessage("queryMsg", "info", "掃描器已啟動，請將 QR Code 對準鏡頭");
+      } catch (error) {
+        setMessage("queryMsg", "error", "啟動掃描器失敗：" + error.message);
+        setDebug(error.stack || error.message);
+      }
+    }
+
+    async function stopScanner() {
+      if (html5QrCode && scannerRunning) {
+        try {
+          await html5QrCode.stop();
+          await html5QrCode.clear();
+          scannerRunning = false;
+          setMessage("queryMsg", "info", "掃描器已停止");
+        } catch (error) {
+          setMessage("queryMsg", "error", "停止掃描器失敗：" + error.message);
+        }
+      }
+    }
+
+    function parseQrToItemCode(rawText) {
+      const text = String(rawText || "").trim();
+
+      if (!text) return "";
+
+      try {
+        if (text.startsWith("{") && text.endsWith("}")) {
+          const obj = JSON.parse(text);
+          if (obj.ItemID) return String(obj.ItemID).trim();
+          if (obj.itemCode) return String(obj.itemCode).trim();
+          if (obj["品項代碼"]) return String(obj["品項代碼"]).trim();
+        }
+      } catch (e) {}
+
+      if (text.includes("|")) {
+        return text.split("|")[0].trim();
+      }
+
+      if (text.includes(",")) {
+        return text.split(",")[0].trim();
+      }
+
+      return text;
+    }
+
+    window.onload = async function() {
+      setMessage("systemMsg", "info", "頁面已載入，可先做健康檢查");
+      setMessage("queryMsg", "info", "請查詢品項或啟動 QR 掃描");
+      setMessage("saveMsg", "info", "查到品項後可進行盤點");
+      await loadSystemParameters();
+    };
+  </script>
+</body>
+</html>
